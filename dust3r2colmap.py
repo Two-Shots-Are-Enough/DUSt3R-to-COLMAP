@@ -28,6 +28,7 @@ from dust3r.utils.device import to_numpy
 from dust3r.image_pairs import make_pairs
 from dust3r.cloud_opt import global_aligner, GlobalAlignerMode
 
+
 class CameraInfo(NamedTuple):
     uid: int
     R: np.ndarray
@@ -42,6 +43,7 @@ class CameraInfo(NamedTuple):
     mask: Optional[np.ndarray] = None
     mono_depth: Optional[np.ndarray] = None
 
+
 class SceneInfo(NamedTuple):
     point_cloud: BasicPointCloud
     train_cameras: list
@@ -50,6 +52,7 @@ class SceneInfo(NamedTuple):
     ply_path: str
     render_cameras: Optional[list[CameraInfo]] = None
 
+
 def import_train_images(scene_name, split_keyword, image_dir):
     Path.ls = lambda x: list(x.iterdir())
 
@@ -57,6 +60,7 @@ def import_train_images(scene_name, split_keyword, image_dir):
     image_files = sorted(image_files, key=lambda x: int(x.split(split_keyword)[-1].split('.')[0])) 
 
     return image_files
+
 
 def train(model_path, image_files, args):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -72,6 +76,7 @@ def train(model_path, image_files, args):
     print(loss)
     return scene
 
+
 # inverse matrix for W2C <-> C2W 
 def inv(mat):
     """ Invert a torch or numpy matrix
@@ -81,6 +86,7 @@ def inv(mat):
     if isinstance(mat, np.ndarray):
         return np.linalg.inv(mat)
     raise ValueError(f'bad matrix type = {type(mat)}')
+
 
 def init_filestructure(save_path):
     save_path = Path(save_path)
@@ -96,7 +102,8 @@ def init_filestructure(save_path):
 
     return save_path, images_path, masks_path, sparse_path
 
-def save_images_masks(imgs, masks, image_files, images_path, masks_path, split_keyword):
+
+def save_images_masks(split_keyword, imgs, masks, image_files, images_path, masks_path):
     # Saving images and optionally masks/depth maps
     for img_path, image, mask in zip(image_files, imgs, masks):
         # DSC 뒤 숫자 추출
@@ -114,7 +121,7 @@ def save_images_masks(imgs, masks, image_files, images_path, masks_path, split_k
         Image.fromarray(mask.astype(np.uint8)).save(mask_save_path)
 
 
-def save_cameras(focals, principal_points, image_files, sparse_path, idx, imgs_shape):
+def save_cameras(split_keyword, focals, principal_points, image_files, sparse_path, imgs_shape):
     # Save cameras.txt
     cameras_file = Path(sparse_path)/'cameras.txt'
     with open(cameras_file, 'w') as cameras_file:
@@ -122,11 +129,12 @@ def save_cameras(focals, principal_points, image_files, sparse_path, idx, imgs_s
         cameras_file.write("# CAMERA_ID, MODEL, WIDTH, HEIGHT, PARAMS[]\n")
         for img_path, focal, pp in zip(image_files, focals, principal_points):
             # DSC 뒤 숫자 추출
-            img_number = idx
+            img_number = int(img_path.split(split_keyword)[-1].split('.')[0])
             cameras_file.write(f"{img_number} PINHOLE {imgs_shape[2]} {imgs_shape[1]} "
                     f"{focal[0]} {focal[0]} {pp[0]} {pp[1]}\n")
 
-def save_imagestxt(extrinsics, image_files, sparse_path, idx):
+
+def save_images_txt(split_keyword, extrinsics, image_files, sparse_path):
      # Save images.txt
     images_file = Path(sparse_path) / 'images.txt'
     # Generate images.txt content
@@ -135,7 +143,7 @@ def save_imagestxt(extrinsics, image_files, sparse_path, idx):
         images_file.write("# IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME\n")
         images_file.write("# POINTS2D[] as (X, Y, POINT3D_ID)\n")
         for i, (img_path, pose) in enumerate(zip(image_files, extrinsics)):
-            img_number = idx
+            img_number = int(img_path.split(split_keyword)[-1].split('.')[0])
 
             # 회전 행렬을 쿼터니언으로 변환
             rotation_matrix = pose[:3, :3]
@@ -143,6 +151,7 @@ def save_imagestxt(extrinsics, image_files, sparse_path, idx):
             tx, ty, tz = pose[:3, 3]
 
             images_file.write(f"{img_number} {qw} {qx} {qy} {qz} {tx} {ty} {tz} {img_number} {img_number}.png\nplaceholder\n")
+
 
 def save_pointcloud_with_normals(imgs, pts3d, msk, sparse_path):
     pc = get_pc(imgs, pts3d, msk)  # Assuming get_pc is defined elsewhere and returns a trimesh point cloud
@@ -183,6 +192,7 @@ end_header
                 normal[0], normal[1], normal[2]
             ))
 
+
 def get_pc(imgs, pts3d, mask):
     imgs = to_numpy(imgs)
     pts3d = to_numpy(pts3d)
@@ -202,11 +212,13 @@ def get_pc(imgs, pts3d, mask):
 
     return pct#, pts
 
+
 def save_pointcloud(imgs, pts3d, msk, sparse_path):
     save_path = Path(sparse_path) / 'points3D.ply'
     pc = get_pc(imgs, pts3d, msk)
 
     pc.export(save_path)
+
 
 def construct_colmap_dataset(scene, image_files, save_dir, split_keyword, extr='w2c'): # extrinsic: 'c2w' or 'w2c' 
     intrinsics = scene.get_intrinsics().detach().cpu().numpy()
@@ -228,9 +240,10 @@ def construct_colmap_dataset(scene, image_files, save_dir, split_keyword, extr='
 
     save_path, images_path, masks_path, sparse_path = init_filestructure(save_dir)
     save_pointcloud_with_normals(imgs, pts3d, masks, sparse_path)
-    save_images_masks(imgs, masks, image_files, images_path, masks_path, split_keyword)
-    save_cameras(focals, principal_points, image_files, sparse_path, split_keyword, imgs_shape=imgs.shape)
-    save_imagestxt(extrinsics, image_files, sparse_path, split_keyword)
+    # save_images_masks(imgs, masks, image_files, images_path, masks_path, split_keyword)
+    save_cameras(split_keyword, focals, principal_points, image_files, sparse_path, imgs_shape=imgs.shape)
+    save_images_txt(split_keyword, extrinsics, image_files, sparse_path)
+
 
 def construct_zip_files(scene_path, output_path):
     output_dir = os.path.dirname(output_path)
