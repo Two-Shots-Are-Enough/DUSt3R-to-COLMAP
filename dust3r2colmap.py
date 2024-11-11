@@ -114,7 +114,7 @@ def save_images_masks(imgs, masks, image_files, images_path, masks_path, split_k
         Image.fromarray(mask.astype(np.uint8)).save(mask_save_path)
 
 
-def save_cameras(focals, principal_points, image_files, sparse_path, split_keyword, imgs_shape):
+def save_cameras(focals, principal_points, image_files, sparse_path, idx, imgs_shape):
     # Save cameras.txt
     cameras_file = Path(sparse_path)/'cameras.txt'
     with open(cameras_file, 'w') as cameras_file:
@@ -122,11 +122,11 @@ def save_cameras(focals, principal_points, image_files, sparse_path, split_keywo
         cameras_file.write("# CAMERA_ID, MODEL, WIDTH, HEIGHT, PARAMS[]\n")
         for img_path, focal, pp in zip(image_files, focals, principal_points):
             # DSC 뒤 숫자 추출
-            img_number = int(img_path.split(split_keyword)[-1].split('.')[0])
+            img_number = idx
             cameras_file.write(f"{img_number} PINHOLE {imgs_shape[2]} {imgs_shape[1]} "
                     f"{focal[0]} {focal[0]} {pp[0]} {pp[1]}\n")
 
-def save_imagestxt(extrinsics, image_files, sparse_path, split_keyword):
+def save_imagestxt(extrinsics, image_files, sparse_path, idx):
      # Save images.txt
     images_file = Path(sparse_path) / 'images.txt'
     # Generate images.txt content
@@ -135,8 +135,7 @@ def save_imagestxt(extrinsics, image_files, sparse_path, split_keyword):
         images_file.write("# IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME\n")
         images_file.write("# POINTS2D[] as (X, Y, POINT3D_ID)\n")
         for i, (img_path, pose) in enumerate(zip(image_files, extrinsics)):
-            # DSC 뒤 숫자 추출
-            img_number = int(img_path.split(split_keyword)[-1].split('.')[0])
+            img_number = idx
 
             # 회전 행렬을 쿼터니언으로 변환
             rotation_matrix = pose[:3, :3]
