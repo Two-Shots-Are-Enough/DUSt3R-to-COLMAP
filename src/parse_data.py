@@ -35,9 +35,9 @@ def parse_data_from_file(filename, W2C = True):
     
     with open(filename, 'r') as file:
         lines = file.readlines()
-        for line in lines[3:]:
-            parts = line.strip().split()
-            if len(parts) < 10:  # Skip lines that don't have enough data
+        for i in range(3, len(lines), 2):  # Skip every second line (placeholder)
+            parts = lines[i].strip().split()
+            if len(parts) < 10:
                 continue
             
             image_id, qw, qx, qy, qz, tx, ty, tz, camera_id, name = parts
@@ -46,12 +46,12 @@ def parse_data_from_file(filename, W2C = True):
             qw, qx, qy, qz = map(float, [qw, qx, qy, qz])
             tx, ty, tz = map(float, [tx, ty, tz])
             camera_id = int(camera_id)
-            extrinsic_matrix = np.eye(4)
             
-            # Create the extrinsic matrix for this camera
+            # Create extrinsic matrix
+            extrinsic_matrix = np.eye(4)
             extrinsic_matrix = quaternion_to_matrix(qw, qx, qy, qz)
-            extrinsic_matrix[3,:3] = [tx, ty, tz]
-
+            extrinsic_matrix[:3, 3] = [tx, ty, tz]  # Set translation vector
+            
             if W2C:
                 extrinsic_matrix = W2C_C2W_transform(extrinsic_matrix)
             

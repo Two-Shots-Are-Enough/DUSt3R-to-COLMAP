@@ -220,7 +220,7 @@ def save_pointcloud(imgs, pts3d, msk, sparse_path):
     pc.export(save_path)
 
 
-def construct_colmap_dataset(scene, image_files, save_dir, split_keyword, extr='w2c'): # extrinsic: 'c2w' or 'w2c' 
+def construct_colmap_dataset(scene, image_files, save_dir, split_keyword, extr='c2w'): # extrinsic: 'c2w' or 'w2c' 
     intrinsics = scene.get_intrinsics().detach().cpu().numpy()
 
     if extr == 'w2c':

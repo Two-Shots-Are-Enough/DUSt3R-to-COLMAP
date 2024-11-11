@@ -48,6 +48,8 @@ def calculate_center_from_cameras(extrinsic_matrix1, extrinsic_matrix2):
     cam_pos1 = extrinsic_matrix1[:3, 3]
     cam_pos2 = extrinsic_matrix2[:3, 3]
     
+    print(cam_pos1, cam_pos2)
+    
     # 각 카메라의 z축 방향 벡터 (시선 방향) 추출
     direction1 = extrinsic_matrix1[:3, 2]  # z-axis
     direction2 = extrinsic_matrix2[:3, 2]  # z-axis
@@ -107,7 +109,7 @@ def interpolate_matrices_with_center(extrinsic_matrix1, extrinsic_matrix2, cente
         
         # Interpolate position on the spherical surface
         interp_pos = (1 - alpha) * cam_pos1 + alpha * cam_pos2
-        direction = (center - interp_pos) / np.linalg.norm(center - interp_pos)
+        # direction = (center - interp_pos) / np.linalg.norm(center - interp_pos)
         
         # Interpolate rotation using SLERP
         q_interpolated = slerp(q1, q2, alpha)
