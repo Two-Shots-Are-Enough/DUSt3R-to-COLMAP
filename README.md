@@ -5,8 +5,6 @@ Pulling data from DUSt3R to fit the COLMAP output format.
 ```
 wget -nc https://download.europe.naverlabs.com/ComputerVision/DUSt3R/DUSt3R_ViTLarge_BaseDecoder_512_dpt.pth -P checkpoints/
 
-git clone https://github.com/graphdeco-inria/gaussian-splatting.git --recursive
-
 git clone https://github.com/naver/dust3r --recursive
 
 pip install -r requirements.txt
