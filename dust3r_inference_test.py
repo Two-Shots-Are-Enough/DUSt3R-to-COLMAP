@@ -6,15 +6,15 @@ from pathlib import Path
 from src import parse_data
 from src import interpolated_camera
 from src import dust3r2colmap as dc
-from utils import qvec2rotmat, rotmat2qvec
+from src.utils import qvec2rotmat, rotmat2qvec
 
 
 # Specify Scene Info
-scene_name = 'book_cap/time_step_1'
+scene_name = 'motorcycle_book_cap'
 split_keyword = 'cam_'
 
 # Specify directories: DUST3R to COLMAP
-image_dir = Path(f"./data/images/{scene_name}")
+image_dir = Path(f"./data/images/{scene_name}/time_step_1")
 save_dir = Path(f"./data/scenes/{scene_name}")
 save_dir.mkdir(exist_ok=True, parents=True)
 folder_to_zip = f"./data/scenes/{scene_name}"
@@ -40,7 +40,7 @@ args.schedule = 'cosine'
 args.lr = 0.01
 args.niter = 300
 
-num = 90 # total number of cam
+num = 60 # total number of cam
 
 
 lt.monkey_patch()
@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     # Specify Interpolation Info
     R1 = camera_extrinsics[1]
-    R2 = camera_extrinsics[90]
+    R2 = camera_extrinsics[60]
 
     center = interpolated_camera.calculate_center_from_cameras(R1, R2)
     interpolated_matrix = interpolated_camera.interpolate_matrices_with_center(R1, R2, center, num)
@@ -72,7 +72,7 @@ if __name__ == '__main__':
             rotation = rotmat2qvec(rotation_matrix)
             qw, qx, qy, qz = rotation
             tx, ty, tz = matrix[:3, 3]
-            images_file.write(f"{img_number} {qw} {qx} {qy} {qz} {tx} {ty} {tz} {img_number} {img_number}.png\nplaceholder\n")
+            images_file.write(f"{img_number} {qw} {qx} {qy} {qz} {tx} {ty} {tz} {img_number} {img_number}.png\n\n")
             
     # Read the original cameras.txt file
     with open(cameras_path, 'r') as file:
@@ -89,7 +89,7 @@ if __name__ == '__main__':
 
     # Get camera info for r1 and r2
     info_C1 = camera_info[1]
-    info_C2 = camera_info[90]
+    info_C2 = camera_info[60]
 
     # Create new cameras.txt with interpolated IDs and r1's params
     with open(cameras_file, 'w') as new_file:
@@ -97,7 +97,7 @@ if __name__ == '__main__':
         new_file.write("# CAMERA_ID, MODEL, WIDTH, HEIGHT, PARAMS[]\n")
 
         # Generate 88 images for r1 + 2 boundary images
-        for i in range(1, 91):
+        for i in range(1, 61):
             if i <= 89:
                 new_file.write(f"{i} {' '.join(info_C1)}\n")
             else:

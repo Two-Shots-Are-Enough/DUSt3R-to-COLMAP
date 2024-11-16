@@ -16,7 +16,7 @@ from PIL import Image
 from pathlib import Path
 from typing import NamedTuple, Optional
 
-from utils import BasicPointCloud, inv, rotmat2qvec, focal2fov, fov2focal
+from src.utils import BasicPointCloud, inv, rotmat2qvec, focal2fov, fov2focal
 # from scene.dataset_readers import storePly
 
 from dust3r.inference import inference

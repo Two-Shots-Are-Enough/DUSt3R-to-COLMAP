@@ -1,3 +1,4 @@
+import os
 import bpy
 import numpy as np
 import mathutils
@@ -78,10 +79,59 @@ def create_blender_cameras(cameras, images, display_size=0.05):
         cam_obj.rotation_quaternion = w2c_rotation
 
 
+def create_image_planes(images, image_folder):
+    """Creates planes with images over the corresponding cameras."""
+    for img_id, img_data in images.items():
+        img_name = img_data['name']
+        img_path = os.path.join(image_folder, img_name)
+
+        # Check if the image file exists
+        if not os.path.exists(img_path):
+            print(f"Image not found: {img_path}")
+            continue
+
+        try:
+            img = bpy.data.images.load(img_path)
+        except RuntimeError as e:
+            print(f"Failed to load image {img_name}: {e}")
+            continue
+
+        # Create a new material with the image texture
+        mat = bpy.data.materials.new(name=f"Mat_{img_id}")
+        mat.use_nodes = True
+        nodes = mat.node_tree.nodes
+        links = mat.node_tree.links
+        bsdf = nodes.get("Principled BSDF")
+        tex_image = nodes.new('ShaderNodeTexImage')
+        tex_image.image = img
+        links.new(bsdf.inputs['Base Color'], tex_image.outputs['Color'])
+
+        # Create a plane for the image
+        bpy.ops.mesh.primitive_plane_add(size=1)
+        plane = bpy.context.object
+        plane.name = f"ImagePlane_{img_id}"
+        plane.data.materials.append(mat)
+
+        # Position and rotate the plane to match the camera
+        w2c_rotation, w2c_translation = c2w_to_w2c(
+            img_data['quaternion'], img_data['translation']
+        )
+        plane.location = w2c_translation
+        plane.rotation_mode = 'QUATERNION'
+        plane.rotation_quaternion = w2c_rotation
+
+        # Adjust plane size based on image aspect ratio
+        aspect_ratio = img.size[0] / img.size[1]
+        plane.scale = (aspect_ratio * 0.5, 0.5, 0.5)
+
+        print(f"Successfully created plane for {img_name}.")
+
+
 # 경로 설정
 cameras_path = 'E:/ajhh9/Documents/Yai/Dust3r-to-COLMAP/data/interpolated_scenes/test/cameras.txt'  # 실제 경로 입력
 images_path = 'E:/ajhh9/Documents/Yai/Dust3r-to-COLMAP/data/interpolated_scenes/test/images.txt'
-
+image_folder = 'E:/ajhh9/Documents/Yai/Dust3r-to-COLMAP/data/images/test'  # 이미지 폴더 경로
 # 데이터 로드 및 Blender 카메라 생성
 cameras, images = load_colmap_data(cameras_path, images_path)
 create_blender_cameras(cameras, images)
+create_image_planes(images, image_folder)
